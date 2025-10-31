@@ -48,6 +48,34 @@ void imu_task(void *pvParameters) {
 
 }
 
+//reading the IMU sensor data
+
+int ICM42670_read_sensor_data(float *ax, float *ay, float *az, float *gx, float *gy, float *gz) {
+    uint8_t raw[12]; // length of the data from gyroscope and acceleration
+    if (ICM42670_read_bytes(0x0B, raw, 12) != 0) //if something wrong i2c reads an error
+        return -1;
+    //bitwise operations to get the data in 8 bits
+    int16_t raw_ax = (raw[0] << 8) | raw[1];
+    int16_t raw_ay = (raw[2] << 8) | raw[3];
+    int16_t raw_az = (raw[4] << 8) | raw[5];
+    int16_t raw_gx = (raw[6] << 8) | raw[7];
+    int16_t raw_gy = (raw[8] << 8) | raw[9];
+    int16_t raw_gz = (raw[10] << 8) | raw[11];
+    //as instructed, making the data human-readable:
+    //accelerator
+    *ax = raw_ax / 8192.0f;
+    *ay = raw_ay / 8192.0f;
+    *az = raw_az / 8192.0f;
+    //gyroscope
+    *gx = raw_gx / 131.0f;
+    *gy = raw_gy / 131.0f;
+    *gz = raw_gz / 131.0f;
+    
+    return 0;
+}
+
+
+
 int main() {
     stdio_init_all();
     sleep_ms(2000); //Wait to see the output.
