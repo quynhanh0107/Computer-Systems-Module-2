@@ -17,7 +17,23 @@ void imu_task(void *pvParameters) {
     (void)pvParameters;
     
     float ax, ay, az, gx, gy, gz, t;
-
+    // Setting up the sensor. 
+    if (init_ICM42670() == 0) {
+        usb_serial_print("ICM-42670P initialized successfully!\n");
+        if (ICM42670_start_with_default_values() != 0){
+            usb_serial_print("ICM-42670P could not initialize accelerometer or gyroscope");
+        }
+        /*int _enablegyro = ICM42670_enable_accel_gyro_ln_mode();
+        usb_serial_print ("Enable gyro: %d\n",_enablegyro);
+        int _gyro = ICM42670_startGyro(ICM42670_GYRO_ODR_DEFAULT, ICM42670_GYRO_FSR_DEFAULT);
+        usb_serial_print ("Gyro return:  %d\n", _gyro);
+        int _accel = ICM42670_startAccel(ICM42670_ACCEL_ODR_DEFAULT, ICM42670_ACCEL_FSR_DEFAULT);
+        usb_serial_print ("Accel return:  %d\n", _accel);*/
+    } else {
+        usb_serial_print("Failed to initialize ICM-42670P.\n");
+    }
+    // Start collection data here. Infinite loop. 
+    uint8_t buf[BUFFER_SIZE];
     while (1)
     {
         if (ICM42670_read_sensor_data(&ax, &ay, &az, &gx, &gy, &gz, &t) == 0) {
