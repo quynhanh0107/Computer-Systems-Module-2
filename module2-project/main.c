@@ -148,7 +148,6 @@ int main() {
     } else {
         printf("Failed to initialize ICM-42670P.\n");
     }
-    float ax, ay, az, gx, gy, gz, t;
 
     while(true){
         set_red_led_status(true);
@@ -166,25 +165,10 @@ int main() {
         //printf("Light level: %u\n", light);
         // clear_display();
         
-
-        if (ICM42670_read_sensor_data(&ax, &ay, &az, &gx, &gy, &gz, &t) == 0) {
-            
-            printf("Accel: X=%f, Y=%f, Z=%f | Gyro: X=%f, Y=%f, Z=%f| Temp: %2.2f°C\n", ax, ay, az, gx, gy, gz, t);
-
-        } else {
-            printf("Failed to read imu data\n");
-        }
-        sleep_ms(1000);
     }// end infite loop
         
 
- 
 
-
-    
-    
-
-   
 
     // Create tasks
     
@@ -203,7 +187,7 @@ int main() {
     // // xTaskCreate(mic_task, "MicTask", 256, NULL, 1, NULL);
     
     // Start the FreeRTOS scheduler
-    //vTaskStartScheduler();
+    vTaskStartScheduler();
 
     return 0;
 }
