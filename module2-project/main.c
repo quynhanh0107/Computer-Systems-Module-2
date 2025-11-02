@@ -17,6 +17,22 @@
 
 #define BUFFER_SIZE 40
 
+#define TILT_THRESHOLD 
+#define FLAT_THRESHOLD 
+#define SHAKE_THRESHOLD 
+
+
+typedef enum IMU_states {
+    STATE_IDLE = 1,    // In-between positions
+    STATE_DOT,     // Being shaken 
+    STATE_DASH,    // Tilted 90 degrees
+    STATE_SPACE    // Flat on table
+};
+
+static enum IMU_states last_state = STATE_IDLE;
+static int space_count = 0; 
+
+
 // Introducing state
 enum state {IDLE=1, READ_SENSOR, UPDATE, NEW_MSG};
 
@@ -59,6 +75,9 @@ void commTask(void *pvParameters) {
 
 // Handling sensors
 void sensorTask(void *pvParameters) {
+   
+    //Start the I2C
+    init_i2c_default();
 
     while (1) {
     
@@ -117,8 +136,51 @@ void imu_task(void *pvParameters) {
     while (1)
     {
         if (ICM42670_read_sensor_data(&ax, &ay, &az, &gx, &gy, &gz) == 0) {
+
+            enum IMU_states current_state = STATE_IDLE;
+
+            //*******Determine the current state based on thresholds*******
+            // STATE_SPACE: flat position
+            if (az > FLAT_THRESHOLD) {
+                current_state = STATE_SPACE;
+
+            }
+            //STATE_DASH: rotating 90 degrees 
+            else if (ay > TILT_THRESHOLD) {
+                current_state = STATE_DASH;
+            }
+            //STATE_DOT: shaking
+            else if (fabs(gx) > SHAKE_THRESHOLD || fabs(gy) > SHAKE_THRESHOLD || fabs(gz) > SHAKE_THRESHOLD ) {
+                current_state = STATE_DOT;
+            }
+
+            //*******Execute only if state changes*******
+            if (current_state != last_state) {
+                switch (current_state) {
+                    case STATE_DOT:
+                        printf(".");
+                        space_count = 0; // reset space count 
+                        break;
+                    case STATE_DASH:
+                        printf("-");
+                        space_count = 0;
+                        break;
+                    case STATE_SPACE: 
+                        printf("");
+                        space_count ++;
+                        break;
+                    case STATE_IDLE:
+                        break;
+
+                }
+                if (space_count >= 3) {
+                    printf("End of message");
+                    space_count = 0;
+                }
+            }
+            last_state = current_state;
            
-            printf("Accel: X=%d, Y=%d, Z=%d | Gyro: X=%d, Y=%d, Z=%d \n", ax, ay, az, gx, gy, gz);
+            //printf("Accel: X=%d, Y=%d, Z=%d | Gyro: X=%d, Y=%d, Z=%d \n", ax, ay, az, gx, gy, gz);
 
         } else {
             printf("Failed to read imu data\n");
