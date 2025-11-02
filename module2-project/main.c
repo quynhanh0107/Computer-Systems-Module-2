@@ -17,7 +17,81 @@
 
 #define BUFFER_SIZE 40
 
+// Introducing state
+enum state {IDLE=1, READ_SENSOR, UPDATE, NEW_MSG};
 
+// Global state variable, initialized to waiting state
+enum state myState = IDLE;
+
+// Timer interrupt once per second
+void clkFxn(void *pvParameters) {
+    // We change the state to a desired one
+    // If-clause is used to check, that the state transition is possible
+    // Now we allow only the state transition IDLE -> READ_SENSOR
+    if (myState == IDLE) {
+    
+        // State transition IDLE -> READ_SENSOR
+        myState = READ_SENSOR;
+    }
+}
+
+// Communications task
+void commTask(void *pvParameters) {
+
+    while (1) { 
+        // Function is_message_waiting is used to check
+        // are there new messages in the buffer
+        // Additionally, we allow only the state transition IDLE -> NEW_MSG
+        if (is_message_waiting() == TRUE && myState == IDLE) {
+
+            // State transition IDLE -> NEW_MSG
+            myState = NEW_MSG;
+        
+            // Functionality of state
+            handle_message();
+            send_reply();			        
+            
+            // State transition NEW_MSG -> IDLE
+            myState = IDLE;
+        }
+    }
+}
+
+// Handling sensors
+void sensorTask(void *pvParameters) {
+
+    while (1) {
+    
+        if (myState == READ_SENSOR) {
+        
+            // Functionality of state
+            read_sensor_values();
+            
+            // State transition READ_SENSOR -> UPDATE
+            myState = UPDATE;				        
+        }
+    
+        vTaskDelay(..);
+    }
+}
+
+// Handling display update
+void displayTask(void *pvParameters) {
+
+    while (1) {
+    
+        if (myState == UPDATE) {
+        
+            // Functionality of state
+            update_screen();
+            
+            // State transition UPDATE -> IDLE
+            myState = IDLE;				        
+        }
+    
+        vTaskDelay(..);
+    }
+}
 
 void imu_task(void *pvParameters) {
     (void)pvParameters;
